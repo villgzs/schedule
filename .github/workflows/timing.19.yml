@@ -53,21 +53,6 @@ jobs:
             fi
           done
 
-      - name: Időpont rögzítése a lastrun.txt fájlba
-        run: |
-          # A schedule könyvtár létrehozása, ha még nem létezik
-          mkdir -p schedule
-
-          # Aktuális dátum és idő lekérése
-          CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-
-          # Fájl útvonala a script-number változó felhasználásával
-          FILE_PATH="schedule/${{ env.script-number }}lastrun.txt"
-
-          # Kiírás a fájl végére
-          echo "Futás időpontja: $CURRENT_TIME" > "$FILE_PATH"
-
-          echo "Sikeresen rögzítve ide: $FILE_PATH ($CURRENT_TIME)"
 
       - name: Feltöltés új, üres (orphan) branch-be
         run: |
@@ -77,16 +62,26 @@ jobs:
 
           TARGET_BRANCH="${{ env.script-number }}proc"
 
-          # Új, tiszta (előzmények nélküli) git repository inicializálása a helyi runneren
-          git init
-          git remote add origin "https://github.com/${{ github.repository }}.git"
-
           # Megpróbáljuk letölteni a meglévő távoli proc ágat (ha már létezik)
-          git fetch origin "$TARGET_BRANCH" && git checkout "$TARGET_BRANCH" || git checkout --orphan "$TARGET_BRANCH"
+          if git fetch origin "$TARGET_BRANCH" 2>/dev/null; then
+            # Ha létezik a távoli ág, átváltunk rá és frissítjük
+            git checkout "$TARGET_BRANCH"
+          else
+            # Ha még nem létezik, létrehozunk egy teljesen tiszta, üres (orphan) ágat
+            git checkout --orphan "$TARGET_BRANCH"
+            # Töröljük a checkout által hozott felesleges fájlokat, hogy üres maradjon
+            git rm -rf . || true
+          fi
 
-          # A schedule mappa és a fájl másolása a friss/meglévő üres ágba (ha máshonnan maradt volna valami, töröljük)
-          # Most csak a schedule/ tartalom kell, de biztosítjuk, hogy a mappa struktúra megmaradjon.
-          git add schedule/${{ env.script-number }}lastrun.txt
+
+          # A fájl újra létrehozása (vagy biztosítása), mert az orphan váltás törölheti a munkamappát
+          mkdir -p schedule
+          CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          FILE_PATH="schedule/${{ env.script-number }}lastrun.txt"
+          echo "Futás időpontja: $CURRENT_TIME" >> "$FILE_PATH"
+
+          # Hozzáadjuk a fájlt
+          git add "$FILE_PATH"
 
           # Csak akkor commitolunk, ha van változás
           git commit -m "chore: update schedule lastrun timestamp for ${{ env.script-number }}" || echo "Nincs változás a commitoláshoz"
