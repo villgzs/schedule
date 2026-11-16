@@ -78,7 +78,7 @@ jobs:
           mkdir -p schedule
           CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           FILE_PATH="schedule/${{ env.script-number }}lastrun.txt"
-          echo "Futás időpontja: $CURRENT_TIME" >> "$FILE_PATH"
+          echo "Futás időpontja: $CURRENT_TIME" > "$FILE_PATH"
 
           # Hozzáadjuk a fájlt
           git add "$FILE_PATH"
