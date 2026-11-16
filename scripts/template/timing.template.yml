@@ -20,8 +20,38 @@ jobs:
       contents: write
 
     steps:
-      - name: Repository letöltése (Checkout)
+      - name: Repository letöltése (Checkout) és az összes branch lekérése
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Szükséges a távoli branchek eléréséhez
+
+      - name: Proc branchek ellenőrzése és összefűzése (merge)
+        run: |
+          # Git konfiguráció a műveletekhez
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Váltás a main ágra (vagy az alapértelmezett ágra)
+          git checkout main
+
+          # Végigmegyünk 00-tól 23-ig (vagy amennyi szükséges)
+          for i in {00..23}; do
+            BRANCH_NAME="${i}proc"
+
+            # Megvizsgáljuk, hogy létezik-e a branch a távoli repóban (origin/<branch_name>)
+            if git ls-remote --exit-code --heads origin "$BRANCH_NAME" > /dev/null 2>&1; then
+              echo "A(z) $BRANCH_NAME branch létezik, letöltés és merge..."
+
+              # Helyi branch létrehozása a távoli alapján és összefűzés
+              git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+              git checkout main
+
+              # Összefűzés ütközésvizsgálat nélkül (-X patience vagy alapértelmezett merge, --no-edit a commit üzenethez)
+              git merge "$BRANCH_NAME" --no-edit
+            else
+              echo "A(z) $BRANCH_NAME branch nem létezik, kihagyva."
+            fi
+          done
 
       - name: Időpont rögzítése a lastrun.txt fájlba
         run: |
@@ -35,7 +65,7 @@ jobs:
           FILE_PATH="schedule/${{ env.script-number }}lastrun.txt"
 
           # Kiírás a fájl végére
-          echo "Futás időpontja: $CURRENT_TIME" >> "$FILE_PATH"
+          echo "Futás időpontja: $CURRENT_TIME" > "$FILE_PATH"
 
           echo "Sikeresen rögzítve ide: $FILE_PATH ($CURRENT_TIME)"
 
