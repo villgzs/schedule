@@ -47,7 +47,7 @@ jobs:
               git checkout main
 
               # Összefűzés ütközésvizsgálat nélkül (-X patience vagy alapértelmezett merge, --no-edit a commit üzenethez)
-              git merge "$BRANCH_NAME" --no-edit
+              git merge "$BRANCH_NAME" --no-edit --allow-unrelated-histories
             else
               echo "A(z) $BRANCH_NAME branch nem létezik, kihagyva."
             fi
