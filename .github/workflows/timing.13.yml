@@ -118,5 +118,16 @@ jobs:
           # Kényszerített feltöltés (push) az adott orphan branch-re
           git push origin "HEAD:$TARGET_BRANCH" --force
 
+
+  main-activity:
+    runs-on: ubuntu-latest
+    needs: update-summary
+
+    # Szükséges a jogosultság, hogy a workflow írni tudjon a repóban
+    permissions:
+      contents: write
+
+    steps:
+
       - name: Wait 2 hours
         run: sleep $((2 * 60 * 60))
