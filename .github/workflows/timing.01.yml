@@ -43,10 +43,10 @@ jobs:
             echo "- Futások száma: $RUNNING_COUNT"
             if [ "$RUNNING_COUNT" -gt 1 ]; then
                 echo "- Van másik futás."
-                RESULT = "false"
+                RESULT="false"
             else
                 echo "- Csak egyedüliként fut a workflow fájl."
-                RESULT = "true"
+                RESULT="true"
             fi
             } >> "$GITHUB_STEP_SUMMARY"
 
