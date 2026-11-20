@@ -29,16 +29,16 @@ jobs:
             SLOT: ${{ env.SCRIPT_NUMBER }}
             SELF_RUN_ID: ${{ github.run_id }}
         run: |
-            OTHER_RUNNING_COUNT=$(gh run list \
-            --repo villgzs/schedule \
-            --status in_progress \
-            --json databaseId \
-            | jq --argjson self_id "$SELF_RUN_ID" '[.[] | select(.databaseId != $self_id)] | length')
+            RUNNING_COUNT=$(gh run list\
+                --repo villgzs/schedule\
+                --status in_progress\
+                --json databaseId,workflowName,headBranch,url,createdAt |\
+                jq 'length')
 
             {
             echo "### Workflow futás ellenőrzése (\`timing.${SLOT}.yml\`)"
             echo ""
-            if [ "$OTHER_RUNNING_COUNT" -gt 0 ]; then
+            if [ "$OTHER_RUNNING_COUNT" -gt 1 ]; then
                 echo "Van másik futás."
             else
                 echo "Csak egyedüliként fut a workflow fájl."
