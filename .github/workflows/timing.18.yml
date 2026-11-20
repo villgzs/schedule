@@ -37,7 +37,7 @@ jobs:
 
             {
             echo "### Workflow futás ellenőrzése (\`timing.${SLOT}.yml\`)"
-            echo "- Futások száma: RUNNING_COUNT$"
+            echo "- Futások száma: $RUNNING_COUNT"
             if [ "$RUNNING_COUNT" -gt 1 ]; then
                 echo "- Van másik futás."
             else
