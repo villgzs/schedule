@@ -34,11 +34,11 @@ jobs:
           now=$(date +%H:%M)
 
           # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
-          if [[ "$now" > "11:00" && "$now" < "13:00" ]]; then
+          if [[ "$now" > "02:00" && "$now" < "06:00" ]]; then
             result="dev-time"
           fi
           # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
-          if [[ "$now" > "21:00" && "$now" < "23:59" ]]; then
+          if [[ "$now" > "12:00" && "$now" < "13:00" ]]; then
             result="latest-time"
           fi
           echo "Current time: $now -> result=$result"
