@@ -37,11 +37,11 @@ jobs:
 
             {
             echo "### Workflow futás ellenőrzése (\`timing.${SLOT}.yml\`)"
-            echo ""
-            if [ "$OTHER_RUNNING_COUNT" -gt 1 ]; then
-                echo "Van másik futás."
+            echo "- Futások száma: RUNNING_COUNT$"
+            if [ "$RUNNING_COUNT" -gt 1 ]; then
+                echo "- Van másik futás."
             else
-                echo "Csak egyedüliként fut a workflow fájl."
+                echo "- Csak egyedüliként fut a workflow fájl."
             fi
             } >> "$GITHUB_STEP_SUMMARY"
 
