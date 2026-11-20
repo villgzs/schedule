@@ -7,26 +7,58 @@ on:
   # Lehetővé teszi a kézi indítást is a GitHub felületén (Actions fül)
   workflow_dispatch:
 
+env:
+  THIS_REPO: villgzs/schedule.git
+  THIS_REPO_PATH: schedule
+  SCRIPT_NUMBER: "17"
+
 jobs:
   update-summary:
     runs-on: ubuntu-latest
 
     # Környezeti változók a job szintjén (a script száma)
     env:
-      script-number: "17"
+      script-number: ${{ env.SCRIPT_NUMBER }}
 
     # Szükséges a jogosultság, hogy a workflow írni tudjon a repóban
     permissions:
       contents: write
 
     steps:
+
+      - name: Check if another workflow is running
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            # A workflow saját sorszáma (00-23), pl. timing.00.yml esetén "00"
+            SLOT: ${{ env.script-number }}
+            SELF_RUN_ID: ${{ github.run_id }}
+        run: |
+            OTHER_RUNNING_COUNT=$(gh run list \
+            --repo villgzs/schedule \
+            --status in_progress \
+            --json databaseId \
+            | jq --argjson self_id "$SELF_RUN_ID" '[.[] | select(.databaseId != $self_id)] | length')
+
+            {
+            echo "### Workflow futás ellenőrzése (\`timing.${SLOT}.yml\`)"
+            echo ""
+            if [ "$OTHER_RUNNING_COUNT" -gt 0 ]; then
+                echo "Van másik futás."
+            else
+                echo "Csak egyedüliként fut a workflow fájl."
+            fi
+            } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Repository letöltése (Checkout) és az összes branch lekérése
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Szükséges a távoli branchek eléréséhez
+          path: ${{ env.THIS_REPO_PATH }}
 
       - name: Proc branchek ellenőrzése és összefűzése (merge)
+        working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
+
           # Git konfiguráció a műveletekhez
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -55,6 +87,7 @@ jobs:
 
 
       - name: Feltöltés új, üres (orphan) branch-be
+        working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
           # Git konfiguráció
           git config user.name "github-actions[bot]"
@@ -88,3 +121,6 @@ jobs:
 
           # Kényszerített feltöltés (push) az adott orphan branch-re
           git push origin "HEAD:$TARGET_BRANCH" --force
+
+      - name: Wait 2 hours
+        run: sleep $((2 * 60 * 60))
