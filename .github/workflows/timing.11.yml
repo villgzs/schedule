@@ -32,11 +32,15 @@ jobs:
             SLOT: ${{ env.SCRIPT_NUMBER }}
             SELF_RUN_ID: ${{ github.run_id }}
         run: |
+            sleep 10
+
             RUNNING_COUNT=$(gh run list\
                 --repo villgzs/schedule\
                 --status in_progress\
                 --json databaseId,workflowName,headBranch,url,createdAt |\
                 jq 'length')
+            echo "### Workflow futás ellenőrzése (\`timing.${SLOT}.yml\`)"
+            echo "- Futások száma: $RUNNING_COUNT"
 
             {
             echo "### Workflow futás ellenőrzése (\`timing.${SLOT}.yml\`)"
