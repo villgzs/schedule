@@ -140,5 +140,43 @@ jobs:
 
     steps:
 
-      - name: Wait 2 hours
-        run: sleep $((2 * 60 * 60))
+      - name: Update orphan trigger branch in villgzs/hass-core32
+        env:
+            TARGET_TOKEN: ${{ secrets.PUSH_TO_HASS_CORE32_TRIGGER }}
+            TARGET_REPO: villgzs/hass-core32
+            TARGET_BRANCH: trigger
+            TARGET_FILE: trigger.txt
+        run: |
+            set -euo pipefail
+
+            WORK_DIR="$(mktemp -d)"
+            trap 'rm -rf "$WORK_DIR"' EXIT
+
+            cd "$WORK_DIR"
+            git init
+            git remote add origin "https://x-access-token:${TARGET_TOKEN}@github.com/${TARGET_REPO}.git"
+
+            # Teljesen új, előzmény nélküli branch
+            git checkout --orphan "$TARGET_BRANCH"
+
+            # A trigger fájl létrehozása
+            printf 'triggered_at=%s\nsource_repo=%s\nrun_id=%s\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "${{ github.repository }}" \
+            "${{ github.run_id }}" > "$TARGET_FILE"
+
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            git add "$TARGET_FILE"
+            git commit -m "chore: trigger update"
+
+            # Force push → a régi history teljesen eltűnik
+            git push --force origin "HEAD:${TARGET_BRANCH}"
+
+            echo "### Orphan trigger branch frissítve" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Cél: \`${TARGET_REPO}\` → \`${TARGET_BRANCH}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Fájl: \`${TARGET_FILE}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wait 1 minutes
+        run: sleep $((1 * 1 * 60))
