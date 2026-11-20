@@ -20,8 +20,9 @@ jobs:
   update-summary:
     runs-on: ubuntu-latest
     outputs:
-      i_am_alone: ${{steps.in_progress.outputs.result}}
-      time_result: ${{ steps.time_check.outputs.result }}
+      i_am_alone: ${{steps.in_progress.outputs.i_am_alone}}
+      dev_time: ${{ steps.time_check.outputs.dev_time_result }}
+      latest_time: ${{ steps.time_check.outputs.latest_time_result }}
 
     steps:
       - name: Check current hour and set result
@@ -29,21 +30,30 @@ jobs:
         env:
           TZ: Europe/Budapest
         run: |
-          result="idle-time"
+          IDLETIME="true"
+          DEVTIME="false"
+          LATESTTIME="false"
 
           now=$(date +%H:%M)
 
           # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
           if [[ "$now" > "02:00" && "$now" < "06:00" ]]; then
-            result="dev-time"
+            DEVTIME="true"
           fi
           # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
-          if [[ "$now" > "12:00" && "$now" < "13:00" ]]; then
-            result="latest-time"
+          if [[ "$now" > "22:00" && "$now" < "23:59" ]]; then
+            LATESTTIME="true"
           fi
-          echo "Current time: $now -> result=$result"
-          echo "Current time: $now -> result=$result" >> "$GITHUB_STEP_SUMMARY"
-          echo "result=$result" >> "$GITHUB_OUTPUT"
+
+          echo "Current time: $now -> dev_time_result=$DEVTIME"
+          echo "Current time: $now -> latest_time_result=$LATESTTIME"
+
+
+          echo "dev_time_result=$DEVTIME" >> "$GITHUB_OUTPUT"
+          echo "latest_time_result=$LATESTTIME" >> "$GITHUB_OUTPUT"
+
+          echo "Current time: $now -> dev_time_result=$DEVTIME" >> "$GITHUB_STEP_SUMMARY"
+          echo "Current time: $now -> latest_time_result=$LATESTTIME" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Check if another workflow is running
         id: in_progress
@@ -75,10 +85,10 @@ jobs:
             fi
             } >> "$GITHUB_STEP_SUMMARY"
 
-            echo "result=${RESULT}" >> "$GITHUB_OUTPUT"
+            echo "i_am_alone=${RESULT}" >> "$GITHUB_OUTPUT"
 
       - name: Repository letöltése (Checkout) és az összes branch lekérése
-        if: steps.in_progress.outputs.result == 'true'
+        if: steps.in_progress.outputs.i_am_alone == 'true'
         uses: actions/checkout@v4
 
         with:
@@ -86,7 +96,7 @@ jobs:
           path: ${{ env.THIS_REPO_PATH }}
 
       - name: Proc branchek ellenőrzése és összefűzése (merge)
-        if: steps.in_progress.outputs.result == 'true'
+        if: steps.in_progress.outputs.i_am_alone == 'true'
         working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
 
@@ -118,7 +128,7 @@ jobs:
 
 
       - name: Feltöltés új, üres (orphan) branch-be
-        if: steps.in_progress.outputs.result == 'true'
+        if: steps.in_progress.outputs.i_am_alone == 'true'
         working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
           # Git konfiguráció
@@ -165,13 +175,13 @@ jobs:
 
     steps:
 
-      - name: Update orphan trigger branch in villgzs/hass-core32
+      - name: Update orphan trigger-dev branch in villgzs/hass-core32
         env:
             TARGET_TOKEN: ${{ secrets.PUSH_TO_HASS_CORE32_TRIGGER }}
             TARGET_REPO: villgzs/hass-core32
             TARGET_BRANCH: trigger-dev
             TARGET_FILE: trigger.txt
-        if: needs.update-summary.outputs.time_result=='dev-time'
+        if: needs.update-summary.outputs.dev_time=='true'
         run: |
             set -euo pipefail
 
@@ -215,7 +225,7 @@ jobs:
             TARGET_REPO: villgzs/hass-core32
             TARGET_BRANCH: trigger-latest
             TARGET_FILE: trigger.txt
-        if: needs.update-summary.outputs.time_result=='latest-time'
+        if: needs.update-summary.outputs.latest_time=='true'
         run: |
             set -euo pipefail
 
