@@ -16,10 +16,6 @@ jobs:
   update-summary:
     runs-on: ubuntu-latest
 
-    # Környezeti változók a job szintjén (a script száma)
-    env:
-      script-number: ${{ env.SCRIPT_NUMBER }}
-
     # Szükséges a jogosultság, hogy a workflow írni tudjon a repóban
     permissions:
       contents: write
@@ -30,7 +26,7 @@ jobs:
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             # A workflow saját sorszáma (00-23), pl. timing.00.yml esetén "00"
-            SLOT: ${{ env.script-number }}
+            SLOT: ${{ env.SCRIPT_NUMBER }}
             SELF_RUN_ID: ${{ github.run_id }}
         run: |
             OTHER_RUNNING_COUNT=$(gh run list \
@@ -93,7 +89,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          TARGET_BRANCH="${{ env.script-number }}proc"
+          TARGET_BRANCH="${{ env.SCRIPT_NUMBER }}proc"
 
           # Megpróbáljuk letölteni a meglévő távoli proc ágat (ha már létezik)
           if git fetch origin "$TARGET_BRANCH" 2>/dev/null; then
@@ -110,14 +106,14 @@ jobs:
           # A fájl újra létrehozása (vagy biztosítása), mert az orphan váltás törölheti a munkamappát
           mkdir -p schedule
           CURRENT_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          FILE_PATH="schedule/${{ env.script-number }}lastrun.txt"
+          FILE_PATH="schedule/${{ env.SCRIPT_NUMBER }}lastrun.txt"
           echo "Futás időpontja: $CURRENT_TIME" > "$FILE_PATH"
 
           # Hozzáadjuk a fájlt
           git add "$FILE_PATH"
 
           # Csak akkor commitolunk, ha van változás
-          git commit -m "chore: update schedule lastrun timestamp for ${{ env.script-number }}" || echo "Nincs változás a commitoláshoz"
+          git commit -m "chore: update schedule lastrun timestamp for ${{ env.SCRIPT_NUMBER }}" || echo "Nincs változás a commitoláshoz"
 
           # Kényszerített feltöltés (push) az adott orphan branch-re
           git push origin "HEAD:$TARGET_BRANCH" --force
