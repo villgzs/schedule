@@ -61,7 +61,7 @@ jobs:
           path: ${{ env.THIS_REPO_PATH }}
 
       - name: Proc branchek ellenőrzése és összefűzése (merge)
-       if: steps.in_progress.outputs.result == 'true'
+        if: steps.in_progress.outputs.result == 'true'
         working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
 
