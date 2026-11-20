@@ -21,8 +21,29 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       i_am_alone: ${{steps.in_progress.outputs.result}}
+      time_result: ${{ steps.time_check.outputs.result }}
 
     steps:
+      - name: Check current hour and set result
+        id: time_check
+        env:
+          TZ: Europe/Budapest
+        run: |
+          result="idle-time"
+
+          now=$(date +%H:%M)
+
+          # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
+          if [[ "$now" > "11:00" && "$now" < "13:00" ]]; then
+            result="dev-time"
+          fi
+          # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
+          if [[ "$now" > "21:00" && "$now" < "23:59" ]]; then
+            result="latest-time"
+          fi
+          echo "Current time: $now -> result=$result"
+          echo "Current time: $now -> result=$result" >> "$GITHUB_STEP_SUMMARY"
+          echo "result=$result" >> "$GITHUB_OUTPUT"
 
       - name: Check if another workflow is running
         id: in_progress
@@ -54,7 +75,7 @@ jobs:
             fi
             } >> "$GITHUB_STEP_SUMMARY"
 
-            echo "result=${RESULT}" >> $GITHUB_OUTPUT
+            echo "result=${RESULT}" >> "$GITHUB_OUTPUT"
 
       - name: Repository letöltése (Checkout) és az összes branch lekérése
         if: steps.in_progress.outputs.result == 'true'
@@ -148,8 +169,53 @@ jobs:
         env:
             TARGET_TOKEN: ${{ secrets.PUSH_TO_HASS_CORE32_TRIGGER }}
             TARGET_REPO: villgzs/hass-core32
-            TARGET_BRANCH: trigger
+            TARGET_BRANCH: trigger-dev
             TARGET_FILE: trigger.txt
+        if: needs.update-summary.outputs.time_result=='dev-time'
+        run: |
+            set -euo pipefail
+
+            WORK_DIR="$(mktemp -d)"
+            trap 'rm -rf "$WORK_DIR"' EXIT
+
+            cd "$WORK_DIR"
+            git init
+            git remote add origin "https://x-access-token:${TARGET_TOKEN}@github.com/${TARGET_REPO}.git"
+
+            # Main branch letöltése
+            git fetch origin main
+
+            # Új, előzmények nélküli branch létrehozása a main tartalmával
+            git checkout --orphan "$TARGET_BRANCH" origin/main
+
+            # A trigger fájl létrehozása
+            printf 'triggered_at=%s\nsource_repo=%s\nrun_id=%s\n' \
+                "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                "${{ github.repository }}" \
+                "${{ github.run_id }}" > "$TARGET_FILE"
+
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+            # A main teljes tartalmának és a trigger fájlnak a hozzáadása
+            git add -A
+            git commit -m "chore: update from main and trigger"
+
+            # Force push → a régi history teljesen eltűnik
+            git push --force origin "HEAD:${TARGET_BRANCH}"
+
+            echo "### Orphan trigger branch frissítve" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Forrás: main" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Cél: \`${TARGET_REPO}\` → \`${TARGET_BRANCH}\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Fájl: \`${TARGET_FILE}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update orphan trigger-latest branch in villgzs/hass-core32
+        env:
+            TARGET_TOKEN: ${{ secrets.PUSH_TO_HASS_CORE32_TRIGGER }}
+            TARGET_REPO: villgzs/hass-core32
+            TARGET_BRANCH: trigger-latest
+            TARGET_FILE: trigger.txt
+        if: needs.update-summary.outputs.time_result=='latest-time'
         run: |
             set -euo pipefail
 
