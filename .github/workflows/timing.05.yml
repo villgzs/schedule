@@ -50,8 +50,10 @@ jobs:
             fi
             } >> "$GITHUB_STEP_SUMMARY"
 
+            echo "result=${RESULT}" >> $GITHUB_OUTPUT
+
       - name: Repository letöltése (Checkout) és az összes branch lekérése
-        if: ${{steps.in_progress.outputs.result}}='true'
+        if: steps.in_progress.outputs.result == 'true'
         uses: actions/checkout@v4
 
         with:
@@ -59,7 +61,7 @@ jobs:
           path: ${{ env.THIS_REPO_PATH }}
 
       - name: Proc branchek ellenőrzése és összefűzése (merge)
-        if: ${{steps.in_progress.outputs.result}}='true'
+       if: steps.in_progress.outputs.result == 'true'
         working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
 
@@ -91,7 +93,7 @@ jobs:
 
 
       - name: Feltöltés új, üres (orphan) branch-be
-        if: ${{steps.in_progress.outputs.result}}='true'
+        if: steps.in_progress.outputs.result == 'true'
         working-directory: ${{ env.THIS_REPO_PATH }}
         run: |
           # Git konfiguráció
@@ -131,7 +133,7 @@ jobs:
   main-activity:
     runs-on: ubuntu-latest
     needs: update-summary
-    if: ${{needs.update-summary.outputs.i_am_alone}}='true'
+    if: needs.update-summary.outputs.i_am_alone == 'true'
     # Szükséges a jogosultság, hogy a workflow írni tudjon a repóban
     permissions:
       contents: write
