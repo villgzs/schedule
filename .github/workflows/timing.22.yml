@@ -23,6 +23,7 @@ jobs:
       i_am_alone: ${{steps.in_progress.outputs.i_am_alone}}
       dev_time: ${{ steps.time_check.outputs.dev_time_result }}
       latest_time: ${{ steps.time_check.outputs.latest_time_result }}
+      seconds_for_next_hour: ${{ steps.time_check.outputs.remaining }}
 
     steps:
       - name: Check current hour and set result
@@ -34,10 +35,17 @@ jobs:
           DEVTIME="false"
           LATESTTIME="false"
 
+          now_epoch=$(date +%s)
+          # Következő egész óra epoch időbélyege (a következő 00 perc és 00 másodperc)
+          next_hour_epoch=$(date -d "$(date -d "@$now_epoch" '+%Y-%m-%d %H:00:00') + 1 hour" +%s)
+
+          remaining=$((next_hour_epoch - now_epoch))
+          echo "Hátralévő másodpercek a következő egész óráig: $remaining"
+
           now=$(date +%H:%M)
 
-          # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
-          if [[ "$now" > "02:00" && "$now" < "06:00" ]]; then
+          # 03:00 és 06:00 között (06:00-ig, tehát 03:00 <= now < 06:00)
+          if [[ "$now" > "03:00" && "$now" < "06:00" ]]; then
             DEVTIME="true"
           fi
           # 02:00 és 06:00 között (06:00-ig, tehát 02:00 <= now < 06:00)
@@ -51,9 +59,12 @@ jobs:
 
           echo "dev_time_result=$DEVTIME" >> "$GITHUB_OUTPUT"
           echo "latest_time_result=$LATESTTIME" >> "$GITHUB_OUTPUT"
+          echo "remaining=$remaining" >> "$GITHUB_OUTPUT"
 
           echo "Current time: $now -> dev_time_result=$DEVTIME" >> "$GITHUB_STEP_SUMMARY"
           echo "Current time: $now -> latest_time_result=$LATESTTIME" >> "$GITHUB_STEP_SUMMARY"
+          echo "Waiting for next hour: $remaining"
+
 
       - name: Check if another workflow is running
         id: in_progress
@@ -174,6 +185,9 @@ jobs:
       contents: write
 
     steps:
+
+      - name: Waiting for the next hour in (${{ need.needs.update-summary.seconds_for_next_hour }}) seconds
+        run: sleep $(( need.needs.update-summary.seconds_for_next_hour ))
 
       - name: Update orphan trigger-dev branch in villgzs/hass-core32
         env:
