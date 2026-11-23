@@ -186,7 +186,7 @@ jobs:
 
     steps:
 
-      - name: Waiting for the next hour in (${{ need.needs.update-summary.seconds_for_next_hour }}) seconds
+      - name: name: Waiting for the next hour in ( ${{ needs.update-summary.outputs.seconds_for_next_hour }} ) seconds
         run: sleep $(( need.needs.update-summary.seconds_for_next_hour ))
 
       - name: Update orphan trigger-dev branch in villgzs/hass-core32
