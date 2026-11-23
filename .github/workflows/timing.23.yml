@@ -189,6 +189,11 @@ jobs:
       - name: Waiting for the next hour in ( ${{ needs.update-summary.outputs.seconds_for_next_hour }} ) seconds
         shell: bash
         run: |
+
+          now=$(date +%H:%M)
+
+          echo "Current time at beginning: $now " >> "$GITHUB_STEP_SUMMARY"
+
           remaining=${{ needs.update-summary.outputs.seconds_for_next_hour }}
 
           while (( remaining > 0 )); do
@@ -203,6 +208,10 @@ jobs:
             mins_left=$(( (remaining + 59) / 60 ))
             echo "Eltelt egy perc. Hátralévő másodpercek: $remaining (~$mins_left perc van még hátra)"
           done
+
+          now=$(date +%H:%M)
+
+          echo "Current time at the end: $now " >> "$GITHUB_STEP_SUMMARY"
 
       - name: Update orphan trigger-dev branch in villgzs/hass-core32
         env:
