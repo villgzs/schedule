@@ -187,7 +187,22 @@ jobs:
     steps:
 
       - name: Waiting for the next hour in ( ${{ needs.update-summary.outputs.seconds_for_next_hour }} ) seconds
-        run: sleep $(( need.needs.update-summary.seconds_for_next_hour ))
+        shell: bash
+        run: |
+          remaining=${{ needs.update-summary.outputs.seconds_for_next_hour }}
+
+          while (( remaining > 0 )); do
+            if (( remaining >= 60 )); then
+              sleep 60
+              remaining=$(( remaining - 60 ))
+            else
+              sleep "$remaining"
+              remaining=0
+            fi
+
+            mins_left=$(( (remaining + 59) / 60 ))
+            echo "Eltelt egy perc. Hátralévő másodpercek: $remaining (~$mins_left perc van még hátra)"
+          done
 
       - name: Update orphan trigger-dev branch in villgzs/hass-core32
         env:
