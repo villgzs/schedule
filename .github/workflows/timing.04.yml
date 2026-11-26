@@ -18,7 +18,7 @@ env:
 
 jobs:
   update-summary:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       i_am_alone: ${{steps.in_progress.outputs.i_am_alone}}
       dev_time: ${{ steps.time_check.outputs.dev_time_result }}
@@ -63,7 +63,7 @@ jobs:
 
           echo "Current time: $now -> dev_time_result=$DEVTIME" >> "$GITHUB_STEP_SUMMARY"
           echo "Current time: $now -> latest_time_result=$LATESTTIME" >> "$GITHUB_STEP_SUMMARY"
-          echo "Waiting for next hour: $remaining"
+          echo "Waiting for next hour: $remaining" >> "$GITHUB_STEP_SUMMARY"
 
 
       - name: Check if another workflow is running
@@ -177,7 +177,7 @@ jobs:
 
 
   main-activity:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: update-summary
     if: needs.update-summary.outputs.i_am_alone == 'true'
     # Szükséges a jogosultság, hogy a workflow írni tudjon a repóban
@@ -186,32 +186,6 @@ jobs:
 
     steps:
 
-      - name: Waiting for the next hour in ( ${{ needs.update-summary.outputs.seconds_for_next_hour }} ) seconds
-        shell: bash
-        run: |
-
-          now=$(date +%H:%M)
-
-          echo "Current time at beginning: $now " >> "$GITHUB_STEP_SUMMARY"
-
-          remaining=${{ needs.update-summary.outputs.seconds_for_next_hour }}
-
-          while (( remaining > 0 )); do
-            if (( remaining >= 60 )); then
-              sleep 60
-              remaining=$(( remaining - 60 ))
-            else
-              sleep "$remaining"
-              remaining=0
-            fi
-
-            mins_left=$(( (remaining + 59) / 60 ))
-            echo "Eltelt egy perc. Hátralévő másodpercek: $remaining (~$mins_left perc van még hátra)"
-          done
-
-          now=$(date +%H:%M)
-
-          echo "Current time at the end: $now " >> "$GITHUB_STEP_SUMMARY"
 
       - name: Update orphan trigger-dev branch in villgzs/hass-core32
         env:
@@ -300,6 +274,3 @@ jobs:
             echo "- Forrás: main" >> "$GITHUB_STEP_SUMMARY"
             echo "- Cél: \`${TARGET_REPO}\` → \`${TARGET_BRANCH}\`" >> "$GITHUB_STEP_SUMMARY"
             echo "- Fájl: \`${TARGET_FILE}\`" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Wait 1 minutes
-        run: sleep $((1 * 1 * 60))
