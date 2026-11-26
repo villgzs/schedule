@@ -186,7 +186,6 @@ jobs:
 
     steps:
 
-
       - name: Update orphan trigger-dev branch in villgzs/hass-core32 - dev
         env:
             TARGET_TOKEN: ${{ secrets.PUSH_TO_HASS_CORE32_TRIGGER }}
@@ -281,7 +280,6 @@ jobs:
             TARGET_REPO: villgzs/hass-core32
             TARGET_BRANCH: tic-tac-toe
             TARGET_FILE: trigger.txt
-        if: needs.update-summary.outputs.latest_time=='true'
         run: |
             set -euo pipefail
 
